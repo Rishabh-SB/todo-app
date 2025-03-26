@@ -3,18 +3,18 @@ import "./App.css";
 
 function App() {
   const [tasks, setTasks] = useState(() => {
-  const savedTasks = localStorage.getItem("tasks");
-  if (savedTasks) {
-    return JSON.parse(savedTasks);
-  } else {
-    const defaultTasks = [
-      { text: "Midnight Task", resetTime: new Date(new Date().setHours(0, 0, 0, 0)), completed: false, timeLeft: 86400 },
-      { text: "Midday Task", resetTime: new Date(new Date().setHours(12, 0, 0, 0)), completed: false, timeLeft: 43200 }
-    ];
-    localStorage.setItem("tasks", JSON.stringify(defaultTasks));
-    return defaultTasks;
-  }
-});
+    const savedTasks = localStorage.getItem("tasks");
+    if (savedTasks) {
+      return JSON.parse(savedTasks);
+    } else {
+      const defaultTasks = [
+        { text: "Midnight Task", resetTime: new Date(new Date().setHours(0, 0, 0, 0)), completed: false },
+        { text: "Midday Task", resetTime: new Date(new Date().setHours(12, 0, 0, 0)), completed: false }
+      ];
+      localStorage.setItem("tasks", JSON.stringify(defaultTasks));
+      return defaultTasks;
+    }
+  });
   const [taskText, setTaskText] = useState("");
   const [resetTime, setResetTime] = useState("");
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -30,9 +30,12 @@ function App() {
       setTasks((prevTasks) =>
         prevTasks.map((task) => {
           const resetTime = new Date(task.resetTime);
-          const timeLeft = Math.max(0, Math.floor((resetTime - now) / 1000));
-          const completed = resetTime <= now ? false : task.completed;
-          return { ...task, timeLeft, completed };
+          if (now >= resetTime) {
+            resetTime.setDate(resetTime.getDate() + 1);
+            return { ...task, resetTime: resetTime.toISOString(), completed: false };
+          }
+          const timeLeft = Math.floor((resetTime - now) / 1000);
+          return { ...task, resetTime: resetTime.toISOString(), timeLeft, completed: task.completed };
         })
       );
     }, 1000);
@@ -46,7 +49,7 @@ function App() {
       const [hours, minutes] = resetTime.split(":").map(Number);
       resetDateTime.setHours(hours, minutes, 0, 0);
       if (resetDateTime < now) resetDateTime.setDate(resetDateTime.getDate() + 1);
-      setTasks([...tasks, { text: taskText, resetTime: resetDateTime, completed: false, timeLeft: Math.floor((resetDateTime - now) / 1000) }]);
+      setTasks([...tasks, { text: taskText, resetTime: resetDateTime.toISOString(), completed: false }]);
       setTaskText("");
       setResetTime("");
     }
